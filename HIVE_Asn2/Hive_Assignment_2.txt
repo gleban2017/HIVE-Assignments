@@ -1,0 +1,100 @@
+#1. Create an external table for NASDAQ daily prices data set.
+
+DROP TABLE nasdaq_daily_prices;
+
+
+
+
+CREATE EXTERNAL TABLE nasdaq_daily_prices
+	(`exchange` STRING,
+	stock_symbol STRING
+,
+	`date` STRING,
+	stock_price_open DECIMAL(5,2),
+	stock_price_high DECIMAL(5,2),
+	stock_price_low	DECIMAL(5,2),
+	stock_price_close DECIMAL(5,2),
+	stock_volume BIGINT,
+	stock_price_adj_close DECIMAL(5,2)
+)
+
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' 
+LINES TERMINATED BY '\n'
+
+LOCATION '/user/maria_dev/Hive_Assignment_02/Nasdaq_daily_prices';
+
+
+
+LOAD DATA INPATH "/user/maria_dev/NASDAQ_daily_prices_A_sample.csv"
+   OVERWRITE INTO TABLE nasdaq_daily_prices;
+
+
+
+-------------------------------------------------------------------------------------------------------------------------
+#2. Create an external table for NASDAQ dividends data set.
+
+
+DROP TABLE nasdaq_dividends;
+
+CREATE EXTERNAL TABLE nasdaq_dividends
+	(`exchange` STRING
+,
+	stock_symbol STRING
+,
+	`date` STRING
+,
+	dividends DECIMAL(7,5))
+
+
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' 
+LINES TERMINATED BY '\n'
+LOCATION '/user/maria_dev/Hive_Assignment_02/nasdaq_dividends'
+
+TBLPROPERTIES("skip.header.line.count" = "1");
+
+
+LOAD DATA INPATH "/user/maria_dev/NASDAQ_dividends_A.csv"
+
+ OVERWRITE INTO TABLE nasdaq_dividends;
+   
+
+
+
+----------------------------------------------------------------------------------------------------------------------
+#3. Find out total volume sale for each stock symbol which has closing price more than $5
+
+select stock_symbol, sum(stock_volume) from nasdaq_daily_prices
+where stock_price_close>5
+group by stock_symbol;
+
+
+---------------------------------------------------------------------------------------------------------------------
+#4. Find out highest price in the history for each stock symbol
+
+select stock_symbol, max(stock_price_high) from nasdaq_daily_prices
+group by stock_symbol;
+
+
+--------------------------------------------------------------------------------------------------------------------
+#5. Find out highesh dividends given for each stock symbol in entire history.
+
+select stock_symbol, max(dividends) from nasdaq_dividends
+group by stock_symbol;
+
+
+
+----------------------------------------------------------------------------------------------------------------------
+#6. Find out highest price and highesh dividends for each stock symbol if highest price and highest dividends exist.
+
+select ns.stock_symbol, ns.max_stock_price, dv.max_dividend from
+(select stock_symbol, max(stock_price_high) max_stock_price from nasdaq_daily_prices group by 
+ stock_symbol) ns
+
+JOIN
+
+
+(select stock_symbol, max(dividends) max_dividend from nasdaq_dividends group by stock_symbol) dv
+
+ON ns.stock_symbol=dv.stock_symbol;
+
+
