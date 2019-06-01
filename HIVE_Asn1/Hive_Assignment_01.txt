@@ -1,0 +1,64 @@
+#1. Create an internal table for Patent data set
+create table patent_dataset_internal(PATENT int,gyear int,GDATE bigint,APPYEAR int,
+									COUNTRY string,POSTATE string,ASSIGNEE bigint,ASSCODE bigint,
+									CLAIMS bigint,NCLASS bigint,CAT bigint,SUBCAT bigint,
+									CMADE bigint,CRECEIVE bigint,RATIOCIT int,GENERAL int,
+									ORIGINAL int,FWDAPLAG int,
+									BCKGTLAG int,SELFCTUB int,SELFCTLB int,
+									SECDUPBD int,SECDLWBD int)
+
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n' 
+TBLPROPERTIES ("skip.header.line.count"="1");
+
+
+LOAD DATA INPATH "/user/maria_dev/apat63_99.txt" OVERWRITE INTO TABLE patent_dataset_internal;
+
+
+
+#2 Create an external table with dynamic partitioning for Patent data
+
+SET hive.exec.dynamic.partition=true;
+SET hive.exec.dynamic.partition.mode=nonstrict;
+
+create external table patent_dataset_external(PATENT int,GDATE bigint,APPYEAR int,
+									COUNTRY string,POSTATE string,ASSIGNEE bigint,ASSCODE bigint,
+									CLAIMS bigint,NCLASS bigint,CAT bigint,SUBCAT bigint,
+									CMADE bigint,CRECEIVE bigint,RATIOCIT int,GENERAL int,
+									ORIGINAL int,FWDAPLAG int,
+									BCKGTLAG int,SELFCTUB int,SELFCTLB int,
+									SECDUPBD int,SECDLWBD int)
+partitioned by (gyear int)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n'
+stored as textfile 
+location "/user/maria_dev/Hive_aasn02_statictable";
+
+
+
+
+
+
+
+insert overwrite table patent_dataset_external
+partition(gyear)
+select PATENT,gyear,GDATE,APPYEAR,COUNTRY,POSTATE,ASSIGNEE,ASSCODE,CLAIMS,NCLASS,
+CAT,SUBCAT,CMADE,
+CRECEIVE,RATIOCIT,GENERAL,ORIGINAL,FWDAPLAG,BCKGTLAG,SELFCTUB,
+SELFCTLB,SECDUPBD,SECDLWBD from patent_dataset_internal;
+
+
+
+
+
+#3.Find out number of patents granted in year 1963.
+select count(*) as Number_of_patents, gyear from patent_dataset_external
+where gyear=1963
+group by gyear;
+
+
+
+
+#4 Find out number of patents granted in each country in year 1999.
+
+select count(*) as Number_of_patents, country from patent_dataset_external
+where gyear=1999
+group by country;
